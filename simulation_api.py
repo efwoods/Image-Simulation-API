@@ -13,16 +13,24 @@ import json
 import base64
 import numpy as np
 from torchvision import transforms
-from models import ImageEncoder, WaveformDecoder  # Assumes models are modular
+from models import (
+    ImageEncoder,
+    WaveformDecoder,
+    WaveformEncoder,
+)  # Assumes models are modular
+from PIL import Image
+from io import BytesIO
+from dotenv import load_dotenv
 
-IMAGE_ENCODER_PATH = "models/image_encoder.pt"
-WAVEFORM_DECODER_PATH = "models/waveform_decoder.pt"
-RELAY_URI = "ws://localhost:8766"
+load_dotenv()
+
 
 image_encoder = ImageEncoder()
 waveform_decoder = WaveformDecoder()
+waveform_encoder = WaveformEncoder()
 image_encoder.load_state_dict(torch.load(IMAGE_ENCODER_PATH))
 waveform_decoder.load_state_dict(torch.load(WAVEFORM_DECODER_PATH))
+waveform_encoder.load_state_dict(torch.load(WAVEFORM_ENCODER_PATH))
 image_encoder.eval()
 waveform_decoder.eval()
 
@@ -38,13 +46,16 @@ async def simulate(websocket):
     async for message in websocket:
         img_data = json.loads(message)["image_base64"]
         image = base64.b64decode(img_data.split(",")[1])
-        image_tensor = transform(Image.open(io.BytesIO(image))).unsqueeze(0)
+        image_tensor = transform(Image.open(BytesIO(image))).unsqueeze(0)
         with torch.no_grad():
             image_latent = image_encoder(image_tensor)
             synthetic_waveform = waveform_decoder(image_latent)
+            waveform_latent = waveform_encoder(
+                synthetic_waveform
+            )  # Assuming waveform_encoder is defined elsewhere and loaded)
             payload = {
                 "type": "waveform_latent",
-                "session_id": "xyz123",
+                "session_id": "xyz123",  # This could be PII attributed to a blockchain
                 "payload": synthetic_waveform.squeeze().tolist(),
             }
             async with websockets.connect(RELAY_URI) as relay_ws:

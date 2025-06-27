@@ -5,3 +5,6 @@ websockets
 torch
 pillow
 websocket
+torchvision
+numpy
+python-dotenv
