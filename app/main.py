@@ -50,6 +50,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="Image Simulation To Synthetic Waveform API",
     root_path="/image-simulation-to-synthetic-waveform-api",
+    lifespan=lifespan,
 )
 
 # CORS middleware
