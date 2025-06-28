@@ -11,6 +11,7 @@ class Settings(BaseSettings):
     DEVICE: str = "cuda" if torch.cuda.is_available() else "cpu"
 
     # Models
+    NORMALIZATION_CONFIG: str
     IMAGE_ENCODER_PATH: str
     WAVEFORM_ENCODER_PATH: str
     WAVEFORM_DECODER_PATH: str

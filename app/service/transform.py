@@ -14,7 +14,7 @@ image_resize_transform = get_image_resize_transform()
 # Load normalization stats
 import json
 
-with open("models/electrode_global_mean_std.json", "r") as f:
+with open(settings.NORMALIZATION_CONFIG, "r") as f:
     electrode_stats = json.load(f)
 
 # Convert to tensors for batch use
@@ -48,6 +48,8 @@ def transform_image_to_waveform_latents(image_tensor):
     synthetic_waveform = waveform_decoder(image_latent)
 
     # Normalize the waveform using the global means and std
-    synthetic_waveform = (synthetic_waveform - means[None, :]) / stds[None, :]
+    # synthetic_waveform = (synthetic_waveform - means[None, :, None]) / stds[
+    #     None, :, None
+    # ]
     waveform_latent = waveform_encoder(synthetic_waveform)
     return waveform_latent
