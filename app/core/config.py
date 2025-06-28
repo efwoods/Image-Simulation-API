@@ -4,9 +4,6 @@ import torch
 
 
 class Settings(BaseSettings):
-    # Ngrok / WebSocket
-    RELAY_URI: str
-
     # Torch
     DEVICE: str = "cuda" if torch.cuda.is_available() else "cpu"
 

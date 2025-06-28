@@ -44,12 +44,13 @@ def preprocess_image_from_websocket(message):
 
 @torch.no_grad()
 def transform_image_to_waveform_latents(image_tensor):
-    image_latent, _ = image_encoder(image_tensor)
+    image_latent, skip_connections = image_encoder(image_tensor)
     synthetic_waveform = waveform_decoder(image_latent)
 
     # Normalize the waveform using the global means and std
     # synthetic_waveform = (synthetic_waveform - means[None, :, None]) / stds[
     #     None, :, None
     # ]
+
     waveform_latent = waveform_encoder(synthetic_waveform)
-    return waveform_latent
+    return waveform_latent, skip_connections

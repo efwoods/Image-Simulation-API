@@ -6,7 +6,8 @@ from core.monitoring import metrics
 from core.config import settings
 from core.logging import logger
 import json
-
+import io
+import torch
 import websockets
 
 from core.config import settings
@@ -26,12 +27,17 @@ async def simulate(websocket: WebSocket):
     try:
         async for message in websocket:
             image_tensor, request = preprocess_image_from_websocket(message)
-            waveform_latent = transform_image_to_waveform_latents(image_tensor)
-
+            waveform_latent, skip_connections = transform_image_to_waveform_latents(
+                image_tensor
+            )
+            buffer = io.BytesIO()  # create in-memory bytes buffer
+            torch.save(skip_connections, buffer)
+            serialized_skip_connections = buffer.getvalue()
             payload = {
                 "type": "waveform_latent",
                 "session_id": request.get("session_id", "anonymous"),
                 "payload": waveform_latent.squeeze().cpu().tolist(),
+                "skip_connections": serialized_skip_connections,
             }
 
             # Forward to latents to relay
