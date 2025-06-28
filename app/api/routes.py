@@ -1,49 +1,71 @@
+# api/routes.py
+
 from fastapi import APIRouter
-from fastapi import WebSocket
-from service.transcription import transcribe_audio
+from fastapi import WebSocket, WebSocketDisconnect
 from core.monitoring import metrics
 from core.config import settings
 from core.logging import logger
 import json
-from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
-from fastapi.responses import Response, RedirectResponse
+
+import websockets
+
+from core.config import settings
+
+from service.transform import (
+    preprocess_image_from_websocket,
+    transform_image_to_waveform_latents,
+)
 
 router = APIRouter()
 
 
-@router.websocket("/ws")
-async def websocket_endpoint(websocket: WebSocket):
+@router.websocket("/ws/simulate-image-to-waveform-latent")
+async def simulate(websocket: WebSocket):
     await websocket.accept()
-    metrics.active_websockets.inc()
+
     try:
-        buffer = bytearray()
-        while True:
-            data = await websocket.receive_bytes()
-            buffer.extend(data)
-            chunk_size = (
-                settings.SAMPLE_RATE * settings.CHUNK_DURATION * 2
-            )  # 16-bit mono
-            while len(buffer) >= chunk_size:
-                chunk = buffer[:chunk_size]
-                buffer = buffer[chunk_size:]
-                result = await transcribe_audio(chunk)
-                await websocket.send_text(json.dumps(result))
-                metrics.transcriptions_processed.inc()
+        async for message in websocket:
+            image_tensor, request = preprocess_image_from_websocket(message)
+            waveform_latent = transform_image_to_waveform_latents(image_tensor)
+
+            payload = {
+                "type": "waveform_latent",
+                "session_id": request.get("session_id", "anonymous"),
+                "payload": waveform_latent.squeeze().cpu().tolist(),
+            }
+
+            # Forward to latents to relay
+            async with websockets.connect(settings.RELAY_URI) as relay_ws:
+                await relay_ws.send(json.dumps(payload))
+
+            # Optional: Send response back to client
+            await websocket.send_json(
+                {"status": "success", "latents": payload["payload"]}
+            )
+            metrics.visual_thoughts_simulated.inc()
+
+    except WebSocketDisconnect:
+        logger.info("WebSocket disconnected.")
     except Exception as e:
-        logger.error(f"WebSocket error: {e}")
+        print(f"Error: {e}")
         metrics.websocket_errors.inc()
-    finally:
-        await websocket.close()
-        metrics.active_websockets.dec()
 
 
-@router.get("/ws-info", tags=["Transcribe"])
+@router.get("/ws-info", tags=["Simulate"])
 async def websocket_info():
     return {
-        "endpoint": "/ws",
+        "endpoint": "/simulate/ws/simulate-image-to-waveform-latent",
+        "full_url": "ws://localhost:8000/image-simulation-to-synthetic-waveform-api/simulate/ws/simulate-image-to-waveform-latent",
         "protocol": "WebSocket",
-        "description": "Real-time audio transcription WebSocket endpoint.",
-        "input": "Raw PCM audio bytes streamed in small chunks.",
-        "output": "JSON messages containing transcription text.",
-        "note": "Each message must be mono 16-bit PCM, chunked according to SAMPLE_RATE * CHUNK_DURATION * 2.",
+        "description": "Real-time simulation of image → synthetic waveform → waveform latent.",
+        "input_format": {
+            "type": "simulate",
+            "session_id": "string (optional)",
+            "image_base64": "data:image/png;base64,...",
+        },
+        "output_format": {
+            "type": "waveform_latent",
+            "session_id": "copied from input",
+            "payload": "[float list representing latent]",
+        },
     }

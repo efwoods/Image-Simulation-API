@@ -26,8 +26,8 @@ websocket_url_requests = get_or_create_metric(
 active_websockets = get_or_create_metric(
     "active_websockets", "Number of active WebSocket connections", "gauge"
 )
-transcriptions_processed = get_or_create_metric(
-    "transcriptions_processed_total", "Total transcriptions processed"
+visual_thoughts_simulated = get_or_create_metric(
+    "visual_thoughts_simulated_total", "Total visual-thoughts processed"
 )
 websocket_errors = get_or_create_metric(
     "websocket_errors_total", "Total WebSocket errors"
@@ -39,7 +39,7 @@ class Metrics:
         self.health_requests = health_requests
         self.websocket_url_requests = websocket_url_requests
         self.active_websockets = active_websockets
-        self.transcriptions_processed = transcriptions_processed
+        self.visual_thoughts_simulated = visual_thoughts_simulated
         self.websocket_errors = websocket_errors
 
 

@@ -1,6 +1,4 @@
 asyncio
-base64
-json
 websockets
 torch
 pillow
@@ -8,3 +6,7 @@ websocket
 torchvision
 numpy
 python-dotenv
+prometheus_client
+uvicorn
+pydantic-settings
+fastapi
