@@ -73,7 +73,7 @@ async def simulate(websocket: WebSocket):
                 # Forward to the relay WebSocket
                 try:
                     async with websockets.connect(
-                        settings.RELAY_URI + "/ws/test"
+                        settings.RELAY_URI + "reconstruct/ws/test"
                     ) as relay_ws:
                         await relay_ws.send(json.dumps(request))
                         relay_response = await relay_ws.recv()
