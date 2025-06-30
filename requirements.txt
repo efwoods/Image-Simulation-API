@@ -10,3 +10,4 @@ prometheus_client
 uvicorn
 pydantic-settings
 fastapi
+requests
