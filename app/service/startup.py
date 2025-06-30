@@ -21,7 +21,6 @@ def extract_ngrok_url(text: str) -> str:
 # Fetch NGROK URL
 # -----------------------------
 def fetch_ngrok_url():
-    global ngrok_url
 
     if not settings.GITHUB_TOKEN:
         print("GitHub token is missing in environment variable `GITHUB_TOKEN`.")
@@ -41,9 +40,9 @@ def fetch_ngrok_url():
         file_content = next(iter(gist_data["files"].values()))["content"]
 
         # Extract ngrok URL
-        ngrok_url = extract_ngrok_url(file_content)
+        settings.NGROK_URL = extract_ngrok_url(file_content)
 
-        print(f"[Startup] Ngrok URL loaded: {ngrok_url}")
+        print(f"[Startup] Ngrok URL loaded: {settings.NGROK_URL}")
 
     except Exception as e:
         print(f"[Startup] Failed to fetch or parse Gist: {e}")
