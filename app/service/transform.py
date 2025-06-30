@@ -48,9 +48,10 @@ def transform_image_to_waveform_latents(image_tensor):
     synthetic_waveform = waveform_decoder(image_latent)
 
     # Normalize the waveform using the global means and std
-    # synthetic_waveform = (synthetic_waveform - means[None, :, None]) / stds[
-    #     None, :, None
-    # ]
+    synthetic_waveform = (synthetic_waveform - means[None, :, None]) / stds[
+        None, :, None
+    ]
 
     waveform_latent = waveform_encoder(synthetic_waveform)
+    # waveform_latent is (batch_size = number_of_images, 128)
     return waveform_latent, skip_connections

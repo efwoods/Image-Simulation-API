@@ -30,14 +30,10 @@ async def simulate(websocket: WebSocket):
             waveform_latent, skip_connections = transform_image_to_waveform_latents(
                 image_tensor
             )
-            buffer = io.BytesIO()  # create in-memory bytes buffer
-            torch.save(skip_connections, buffer)
-            serialized_skip_connections = buffer.getvalue()
             payload = {
-                "type": "waveform_latent",
+                "type": "waveform_latent",  # (batch_size = number_of_images, 128)
                 "session_id": request.get("session_id", "anonymous"),
                 "payload": waveform_latent.squeeze().cpu().tolist(),
-                "skip_connections": serialized_skip_connections,
             }
 
             # Forward to latents to relay
@@ -55,6 +51,49 @@ async def simulate(websocket: WebSocket):
     except Exception as e:
         print(f"Error: {e}")
         metrics.websocket_errors.inc()
+
+
+@router.websocket("/ws/test")
+async def simulate(websocket: WebSocket):
+    await websocket.accept()
+
+    try:
+        while True:
+            message = await websocket.receive_text()
+            request = json.loads(message)
+
+            if request.get("type") == "test":
+                print(f"[ImageSimulation] Received test payload: {request}")
+
+                # Forward to the relay WebSocket
+                try:
+                    async with websockets.connect(settings.RELAY_URI) as relay_ws:
+                        await relay_ws.send(json.dumps(request))
+                        relay_response = await relay_ws.recv()
+                        relay_data = json.loads(relay_response)
+                        print(f"[ImageSimulation] Relay responded: {relay_data}")
+                except Exception as relay_error:
+                    await websocket.send_json(
+                        {
+                            "status": "error",
+                            "message": f"Relay failed: {str(relay_error)}",
+                        }
+                    )
+                    return
+
+                # Respond back to the sender (webcam-to-websocket-simulation)
+                await websocket.send_json(
+                    {"status": "forwarded", "relay_response": relay_data}
+                )
+
+            else:
+                await websocket.send_json(
+                    {"status": "error", "message": "Unsupported message type"}
+                )
+
+    except Exception as e:
+        print(f"[ImageSimulation] WebSocket error: {e}")
+        await websocket.close()
 
 
 @router.get("/ws-info", tags=["Simulate"])
