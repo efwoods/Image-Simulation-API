@@ -66,7 +66,9 @@ async def simulate(websocket: WebSocket):
 
             if request.get("type") == "test":
                 print(f"[ImageSimulation] Received test payload: {request}")
-
+                logger.info(
+                    f"settings.RELAY_URI + /ws/test: {settings.RELAY_URI + "/ws/test"}"
+                )
                 # Forward to the relay WebSocket
                 try:
                     async with websockets.connect(
