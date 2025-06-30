@@ -32,7 +32,7 @@ from contextlib import asynccontextmanager
 from core.config import settings
 from core.monitoring import metrics
 from core.logging import logger
-from service.startup import fetch_ngrok_url, ngrok_url
+from service.startup import fetch_ngrok_url
 
 # API Routes
 from api.routes import router
@@ -42,9 +42,8 @@ from api.routes import router
 async def lifespan(app: FastAPI):
     # Startup: initialize Whisper model
     load_dotenv()
+    # Update config
     fetch_ngrok_url()
-    app.state.ngrok_url = ngrok_url
-    logger.info(f"ngrok_url set: {ngrok_url}")
     yield  # Application runs here
 
     # Shutdown: (optional cleanup)
