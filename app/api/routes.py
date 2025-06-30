@@ -65,8 +65,11 @@ async def simulate(websocket: WebSocket):
             request = json.loads(message)
 
             if request.get("type") == "test":
-                print(f"[ImageSimulation] Received test payload: {request}")
-                logger.info(f"settings.RELAY_URI + /ws/test: {settings.RELAY_URI}")
+                logger.info(f"[ImageSimulation] Received test payload: {request}")
+                logger.info(
+                    f"settings.RELAY_URI + /ws/test: {settings.RELAY_URI}" + "/ws/test"
+                )
+                logger.info(f"json.dumps(request): {json.dumps(request)}")
                 # Forward to the relay WebSocket
                 try:
                     async with websockets.connect(
@@ -75,7 +78,7 @@ async def simulate(websocket: WebSocket):
                         await relay_ws.send(json.dumps(request))
                         relay_response = await relay_ws.recv()
                         relay_data = json.loads(relay_response)
-                        print(f"[ImageSimulation] Relay responded: {relay_data}")
+                        logger.info(f"[ImageSimulation] Relay responded: {relay_data}")
                 except Exception as relay_error:
                     await websocket.send_json(
                         {
