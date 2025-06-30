@@ -37,7 +37,9 @@ async def simulate(websocket: WebSocket):
             }
 
             # Forward to latents to relay
-            async with websockets.connect(settings.RELAY_URI) as relay_ws:
+            async with websockets.connect(
+                settings.RELAY_URI + "/ws/reconstruct-image-from-waveform-latent"
+            ) as relay_ws:
                 await relay_ws.send(json.dumps(payload))
 
             # Optional: Send response back to client
@@ -67,7 +69,9 @@ async def simulate(websocket: WebSocket):
 
                 # Forward to the relay WebSocket
                 try:
-                    async with websockets.connect(settings.RELAY_URI) as relay_ws:
+                    async with websockets.connect(
+                        settings.RELAY_URI + "/ws/test"
+                    ) as relay_ws:
                         await relay_ws.send(json.dumps(request))
                         relay_response = await relay_ws.recv()
                         relay_data = json.loads(relay_response)
